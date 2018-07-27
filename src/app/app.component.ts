@@ -216,6 +216,7 @@ export class AppComponent implements OnInit {
 
     return color;
   }
+  
   private findIslands() {
     // Write your code below.
     let color : string;
