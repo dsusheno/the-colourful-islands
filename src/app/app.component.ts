@@ -49,6 +49,7 @@ export class AppComponent implements OnInit {
 
   public onColorChanged(event: Event) {
     // Write your code below.
+    this.newColor = (<HTMLTextAreaElement>event.currentTarget).value;
   }
 
   private getInitialColor(value: number): string {
@@ -133,15 +134,108 @@ export class AppComponent implements OnInit {
   /**
    * attach event listeners
    */
+
+  //Color Island with a mouse click
+  private mouseClick(event) {
+
+    const canvasElement = event.target.getBoundingClientRect();
+    const canvasX = event.clientX - canvasElement.left;
+    const canvasY = event.clientY - canvasElement.top;
+
+    const col = Math.floor(SIZE / canvasElement.width * canvasX);
+    const row = Math.floor(SIZE / canvasElement.height * canvasY);
+    
+    //Change status of the island's area from Discover to Land to be able to color it again with Recursive Island Search
+    this.recursiveSetValue(row, col, this.newColor, AreaStatus.Land);
+    this.recursiveSetValue(row, col, this.newColor, AreaStatus.Discovered);
+
+    this.render();
+  }
+
   private attachEventListeners() {
     // Write your code below.
+    this.canvasEl.nativeElement.addEventListener('click', this.mouseClick.bind(this) , false);
   }
 
   /**
    * discover islands and apply a new color to each of them.
    * the definition of an Island is : All LAND square that connect to an other LAND square
    */
+
+  /**
+   * Recursive Island Search
+   * We can apply this method only to change Land => Discover || Discover => Land
+   */
+  private recursiveSetValue(row: number, column: number, color: string, setValue: number){
+    let state = this.getValueAt(row, column);
+    let valueToChange : number;
+    
+    if (setValue == AreaStatus.Land)
+      valueToChange = AreaStatus.Discovered;
+    else if (setValue == AreaStatus.Discovered)
+      valueToChange = AreaStatus.Land;
+
+    if (state == valueToChange)
+    {
+      this.setIslandColor(row, column, color);
+      this.setValueAt(row, column, setValue);
+
+      if (column + 1 < SIZE && this.getValueAt(row, column + 1) == valueToChange)
+        this.recursiveSetValue(row, column + 1, color, setValue);
+
+      if (column - 1 >= 0 && this.getValueAt(row, column - 1) == valueToChange)
+        this.recursiveSetValue(row, column - 1, color, setValue);
+
+      if (row + 1 < SIZE && column + 1 < SIZE && this.getValueAt(row + 1, column + 1) == valueToChange)
+        this.recursiveSetValue(row + 1, column + 1, color, setValue);
+
+      if (row - 1 >= 0 && column - 1 >= 0 && this.getValueAt(row - 1, column - 1) == valueToChange)
+        this.recursiveSetValue(row - 1, column - 1, color, setValue);
+
+      if (row + 1 < SIZE && this.getValueAt(row + 1, column) == valueToChange)
+        this.recursiveSetValue(row + 1, column, color, setValue);
+
+      if (row - 1 >= 0 && this.getValueAt(row - 1, column) == valueToChange)
+        this.recursiveSetValue(row - 1, column, color, setValue);
+
+      if (row + 1 < SIZE && column - 1 >= 0 && this.getValueAt(row + 1, column - 1) == valueToChange)
+        this.recursiveSetValue(row + 1, column - 1, color, setValue);
+
+      if (row - 1 >= 0 && column + 1 < SIZE && this.getValueAt(row - 1, column + 1) == valueToChange)
+        this.recursiveSetValue(row - 1, column + 1, color, setValue);
+    }
+  }
+
+  //Set unique color for each island
+  private searchUniqueColor(allColors: String[]) : string {
+    let color = this.generateRandomColor();
+
+    if (allColors.indexOf(color) != -1) {
+      color = this.searchUniqueColor(allColors);
+    }
+
+    return color;
+  }
   private findIslands() {
     // Write your code below.
+    let color : string;
+    let allColors : String[] = [];
+    let state : number;
+
+    for (let row = 0; row < SIZE; row++) {
+      for (let col = 0; col < SIZE; col++) {
+        state = this.getValueAt(row, col);
+
+        if (state == AreaStatus.Land)
+        {
+          this.numberOfIslands++;
+
+          color = this.searchUniqueColor(allColors);
+          allColors.push(color);
+
+          this.recursiveSetValue(row, col, color, AreaStatus.Discovered);
+        }
+      }
+    }
   }
 }
